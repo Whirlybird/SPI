@@ -81,30 +81,66 @@
 #include "partest.h"
 
 /* Xilinx includes. */
-//#include "xgpio.h"
+#include "xgpio.h"
 #include "xspips.h"
 #include "xparameters.h"
 
-#define partstNUM_LEDS			( 1 )
-#define partstDIRECTION_OUTPUT	( 1 )
-#define partstOUTPUT_ENABLED	( 1 )
-#define partstLED_OUTPUT		( 1 )
 
-#define LED_CH	(1)
-#define SW_CH	(2)
+// GPIO
 
-#define SETTINGS_CH	(1)
-#define	PATTERN_CH	(2)
+#define GPIO_CH	(1)
+#define GPIO_GND_MSK (0b1000)
+#define GPIO_VCC_MSK (0b0010)
 
-/*-----------------------------------------------------------*/
+#define GPIO_IRQ_MSK   (0b0001)
+#define GPIO_CE_MSK    (0b0100)
+#define GPIO_CE_BIT		3
+#define GPIO_IRQ_BIT	0
 
-//static XGpio xGpio;
-//static BaseType_t xLEDState;
+// ensure that VCC, GND are always 1, 0 for writes
+#define GPIO_WRITE(val)	{\
+		last_write |= (val | GPIO_VCC_MSK) & ~GPIO_GND_MSK;\
+		XGpio_DiscreteWrite(&xGpio, GPIO_CH, last_write);\
+	}
+
+#define SET_TX_MODE()	GPIO_WRITE(last_write & ~(GPIO_CE_MSK))
+#define SET_RX_MODE()	GPIO_WRITE(1 << GPIO_CE_BIT)
+
+#define DISABLE_INT()	GPIO_WRITE(GPIO_IRQ_MSK)
+#define ENABLE_INT()	GPIO_WRITE(last_write & ~0)
+
+static XGpio xGpio;
+static u8 last_write = GPIO_VCC_MSK | GPIO_IRQ_MSK; // disable interrupts from beginning
+
+//SPI
 static XSpiPs xSPI;
 
-/*-----------------------------------------------------------*/
+#define SPI_TRANSFER(writeBuf, readBuf, len) {\
+		XSpiPs_SetSlaveSelect(&xSPI, 0x01);\
+		XSpiPs_PolledTransfer(&xSPI,(u8 *) (writeBuf),(u8 *) (readBuf), len);\
+	}
+#define NOP 0xFF
 
-void vParTestInitialise( void )
+
+void initGPIO(void)
+{
+	XGpio_Config *pxConfigPtr;
+	BaseType_t xStatus;
+
+	//Initialize GPIO
+	pxConfigPtr = XGpio_LookupConfig( XPAR_AXI_GPIO_0_DEVICE_ID );
+    xStatus = XGpio_CfgInitialize( &xGpio, pxConfigPtr, pxConfigPtr->BaseAddress );
+    configASSERT( xStatus == XST_SUCCESS );
+    ( void ) xStatus;
+
+    // Set GPIO pins to output
+    XGpio_SetDataDirection(&xGpio, GPIO_CH, 0x00);
+	// Set VCC to 1 and rest of pins to 0.
+	XGpio_DiscreteWrite(&xGpio, GPIO_CH, last_write);
+	//SET_TX_MODE();
+}
+
+void initSPI(void)
 {
 	XSpiPs_Config *pxConfigPtrSPI;
 	BaseType_t xStatusSPI;
@@ -113,22 +149,60 @@ void vParTestInitialise( void )
 	pxConfigPtrSPI = XSpiPs_LookupConfig(XPAR_PS7_SPI_1_DEVICE_ID);
 	xStatusSPI = XSpiPs_CfgInitialize(&xSPI, pxConfigPtrSPI, pxConfigPtrSPI->BaseAddress);
 	configASSERT( xStatusSPI == XST_SUCCESS );
-	(void) xStatusSPI;
 
 	// Set SPI Options
 	XSpiPs_SetOptions(&xSPI, XSPIPS_MASTER_OPTION);
-	XSpiPs_SetClkPrescaler(&xSPI, XSPIPS_CLK_PRESCALE_256);
+	XSpiPs_SetClkPrescaler(&xSPI, XSPIPS_CLK_PRESCALE_16); // results in 10Mhz transfer
 }
 
-void SPI_SEND()
+void vParTestInitialise( void )
 {
-	u16 sendBufferSPI1;
+	initGPIO();
+	initSPI();
+	SET_RX_MODE();
+}
+
+u16 SPI_SEND(u16 *val)
+{
 	u16 readBufferSPI1;
 
-	//sendBufferSPI1 = 0x7B23;
-	sendBufferSPI1 = 0xABCD;
-	if (XSpiPs_SetSlaveSelect(&xSPI, 0x01) == XST_SUCCESS) {
-		XSpiPs_PolledTransfer(&xSPI,(u8 *) &sendBufferSPI1,(u8 *) &readBufferSPI1, sizeof(sendBufferSPI1));
-	}
+	XSpiPs_SetSlaveSelect(&xSPI, 0x01);
+	XSpiPs_PolledTransfer(&xSPI,(u8 *) val,(u8 *) &readBufferSPI1, 6);
+
+	return readBufferSPI1;
 }
 
+void readReg(u8 addr, u8 *readBuf)
+{
+	u8 writeBuf[2]; // = addr & 0x1F;
+
+	writeBuf[0] = addr & 0x1F;
+	//writeBuf[1] = NOP;
+
+	SPI_TRANSFER(writeBuf, readBuf, 2);
+}
+
+u16 writeReg(u8 addr)
+{
+	u16 address = (addr & 0x1f) | 0x10;
+	return SPI_SEND(&address);
+}
+
+u8 writeStatusRegister(u8 reg, u8 val)
+{
+	u8 readBuf[2];
+	u8 writeBuf[2];
+
+	writeBuf[0] = (reg & 0x3F) | 0x20;
+	writeBuf[1] = val;
+
+	SPI_TRANSFER(writeBuf, readBuf, 2);
+
+	return *readBuf;
+}
+
+void readRX(u8 *readBuf)
+{
+	u8 writeBuf = 0b0110001;
+	SPI_TRANSFER(&writeBuf, readBuf, 32);
+}
