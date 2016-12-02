@@ -151,7 +151,7 @@ void initSPI(void)
 	configASSERT( xStatusSPI == XST_SUCCESS );
 
 	// Set SPI Options
-	XSpiPs_SetOptions(&xSPI, XSPIPS_MASTER_OPTION);
+	XSpiPs_SetOptions(&xSPI, XSPIPS_MASTER_OPTION | XSPIPS_FORCE_SSELECT_OPTION);
 	XSpiPs_SetClkPrescaler(&xSPI, XSPIPS_CLK_PRESCALE_16); // results in 10Mhz transfer
 }
 
@@ -159,7 +159,7 @@ void vParTestInitialise( void )
 {
 	initGPIO();
 	initSPI();
-	SET_RX_MODE();
+	//SET_RX_MODE();
 }
 
 u16 SPI_SEND(u16 *val)
@@ -174,10 +174,12 @@ u16 SPI_SEND(u16 *val)
 
 void readReg(u8 addr, u8 *readBuf)
 {
-	u8 writeBuf[2]; // = addr & 0x1F;
+	u8 writeBuf[5]; // = addr & 0x1F;
+	int i;
 
 	writeBuf[0] = addr & 0x1F;
-	//writeBuf[1] = NOP;
+	for (i = 1; i < 5; i++)
+		writeBuf[i] = NOP;
 
 	SPI_TRANSFER(writeBuf, readBuf, 2);
 }
