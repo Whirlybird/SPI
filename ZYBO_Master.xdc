@@ -47,6 +47,8 @@
 ##IO_L23P_T3_35
 #set_property PACKAGE_PIN M14 [get_ports {led_tri_o[0]}]
 #set_property IOSTANDARD LVCMOS33 [get_ports {led_tri_o[0]}]
+#set_property PACKAGE_PIN M14 [get_ports {ce_tri_o[0]}]
+#set_property IOSTANDARD LVCMOS33 [get_ports {ce_tri_o[0]}]
 
 ##IO_L23N_T3_35
 #set_property PACKAGE_PIN M15 [get_ports {led_tri_o[1]}]
@@ -227,37 +229,61 @@
 #set_property IOSTANDARD LVCMOS33 [get_ports {jb_p[3]}]
 
 ##Pmod Header JC
-##IO_L10N_T1_34
+##IO_L10N_T1_34 JC1
 #set_property PACKAGE_PIN W15 [get_ports {jc_n[0]}]
 #set_property IOSTANDARD LVCMOS33 [get_ports {jc_n[0]}]
+#IRQ
+set_property PACKAGE_PIN V15 [get_ports {gpio_tri_o[0]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {gpio_tri_o[0]}]
 
-##IO_L10P_T1_34
+##IO_L10P_T1_34 JC2
 #set_property PACKAGE_PIN V15 [get_ports {jc_p[0]}]
 #set_property IOSTANDARD LVCMOS33 [get_ports {jc_p[0]}]
+#MOSI
+set_property PACKAGE_PIN W15 [get_ports {spi_1_io0_io}]
+set_property IOSTANDARD LVCMOS33 [get_ports {spi_1_io0_io}]
 
-##IO_L1N_T0_34
+##IO_L1N_T0_34 JC3
 #set_property PACKAGE_PIN T10 [get_ports {jc_n[1]}]
 #set_property IOSTANDARD LVCMOS33 [get_ports {jc_n[1]}]
+# SS
+set_property PACKAGE_PIN T11 [get_ports {spi_1_ss1_o}]
+set_property IOSTANDARD LVCMOS33 [get_ports {spi_1_ss1_o}]
 
-##IO_L1P_T0_34
+##IO_L1P_T0_34 JC4
 #set_property PACKAGE_PIN T11 [get_ports {jc_p[1]}]
 #set_property IOSTANDARD LVCMOS33 [get_ports {jc_p[1]}]
+# VCC
+set_property PACKAGE_PIN T10 [get_ports {gpio_tri_o[1]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {gpio_tri_o[1]}]
 
-##IO_L8N_T1_34
+##IO_L8N_T1_34 JC7
 #set_property PACKAGE_PIN Y14 [get_ports {jc_n[2]}]
 #set_property IOSTANDARD LVCMOS33 [get_ports {jc_n[2]}]
+# MISO
+set_property PACKAGE_PIN W14 [get_ports {spi_1_io1_io}]
+set_property IOSTANDARD LVCMOS33 [get_ports {spi_1_io1_io}]
 
-##IO_L8P_T1_34
+##IO_L8P_T1_34 JC8
 #set_property PACKAGE_PIN W14 [get_ports {jc_p[2]}]
 #set_property IOSTANDARD LVCMOS33 [get_ports {jc_p[2]}]
+# SCK
+set_property PACKAGE_PIN Y14 [get_ports {spi_1_sck_io}]
+set_property IOSTANDARD LVCMOS33 [get_ports {spi_1_sck_io}]
 
-##IO_L2N_T0_34
+##IO_L2N_T0_34 JC9
 #set_property PACKAGE_PIN U12 [get_ports {jc_n[3]}]
 #set_property IOSTANDARD LVCMOS33 [get_ports {jc_n[3]}]
+# CE
+set_property PACKAGE_PIN T12 [get_ports {gpio_tri_o[2]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {gpio_tri_o[2]}]
 
-##IO_L2P_T0_34
+##IO_L2P_T0_34 JC10
 #set_property PACKAGE_PIN T12 [get_ports {jc_p[3]}]
 #set_property IOSTANDARD LVCMOS33 [get_ports {jc_p[3]}]
+# GND
+set_property PACKAGE_PIN U12 [get_ports {gpio_tri_o[3]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {gpio_tri_o[3]}]
 
 ##Pmod Header JD
 ##IO_L5N_T0_34
@@ -293,43 +319,71 @@
 #set_property IOSTANDARD LVCMOS33 [get_ports {jd_p[3]}]
 
 ##Pmod Header JE
-##IO_L4P_T0_34
+##IO_L4P_T0_34 JE1
 # MOSI
-set_property PACKAGE_PIN V12 [get_ports {spi_1_io0_io}]
-set_property IOSTANDARD LVCMOS33 [get_ports {spi_1_io0_io}]
+#set_property PACKAGE_PIN V12 [get_ports {spi_1_io0_io}]
+#set_property IOSTANDARD LVCMOS33 [get_ports {spi_1_io0_io}]
+#MISO
+#set_property PACKAGE_PIN V12 [get_ports {spi_1_io1_io}]
+#set_property IOSTANDARD LVCMOS33 [get_ports {spi_1_io1_io}]
 
-##IO_L18N_T2_34
+##IO_L18N_T2_34 JE2
 # MISO
-set_property PACKAGE_PIN W16 [get_ports {spi_1_io1_io}]
-set_property IOSTANDARD LVCMOS33 [get_ports {spi_1_io1_io}]
+#set_property PACKAGE_PIN W16 [get_ports {spi_1_io1_io}]
+#set_property IOSTANDARD LVCMOS33 [get_ports {spi_1_io1_io}]
+#SCK
+#set_property PACKAGE_PIN W16 [get_ports {spi_1_sck_io}]
+#set_property IOSTANDARD LVCMOS33 [get_ports {spi_1_sck_io}]
 
-##IO_25_35
+##IO_25_35 JE3
 # SCLK
-set_property PACKAGE_PIN J15 [get_ports {spi_1_sck_io}]
-set_property IOSTANDARD LVCMOS33 [get_ports {spi_1_sck_io}]
+#set_property PACKAGE_PIN J15 [get_ports {spi_1_sck_io}]
+#set_property IOSTANDARD LVCMOS33 [get_ports {spi_1_sck_io}]
+# Chip Enable
+#set_property PACKAGE_PIN J15 [get_ports {gpio_tri_o[0]}]
+#set_property IOSTANDARD LVCMOS33 [get_ports {gpio_tri_o[0]}]
 
-##IO_L19P_T3_35
+
+##IO_L19P_T3_35 JE4
 # SS 1
-set_property PACKAGE_PIN H15 [get_ports {spi_1_ss1_o}]
-set_property IOSTANDARD LVCMOS33 [get_ports {spi_1_ss1_o}]
+#set_property PACKAGE_PIN H15 [get_ports {spi_1_ss1_o}]
+#set_property IOSTANDARD LVCMOS33 [get_ports {spi_1_ss1_o}]
+# SS 
+#set_property PACKAGE_PIN H15 [get_ports {spi_1_ss_io}]
+#set_property IOSTANDARD LVCMOS33 [get_ports {spi_1_ss_io}]
+# GND
+#set_property PACKAGE_PIN H15 [get_ports {gpio_tri_o[1]}]
+#set_property IOSTANDARD LVCMOS33 [get_ports {gpio_tri_o[1]}]
 
-##IO_L3N_T0_DQS_34
+##IO_L3N_T0_DQS_34 JE7
+# IRQ
+#set_property PACKAGE_PIN V13 [get_ports {gpio_tri_o[2]}]
+#set_property IOSTANDARD LVCMOS33 [get_ports {gpio_tri_o[2]}]
 # SS 2
-set_property PACKAGE_PIN V13 [get_ports {spi_1_ss2_o}]
-set_property IOSTANDARD LVCMOS33 [get_ports {spi_1_ss2_o}]
+#set_property PACKAGE_PIN V13 [get_ports {spi_1_ss2_o}]
+#set_property IOSTANDARD LVCMOS33 [get_ports {spi_1_ss2_o}]
 
-##IO_L9N_T1_DQS_34
+##IO_L9N_T1_DQS_34 JE8
 ## SS
-set_property PACKAGE_PIN U17 [get_ports {spi_1_ss_io}]
-set_property IOSTANDARD LVCMOS33 [get_ports {spi_1_ss_io}]
+#set_property PACKAGE_PIN U17 [get_ports {spi_1_ss_io}]
+#set_property IOSTANDARD LVCMOS33 [get_ports {spi_1_ss_io}]
+# MOSI
+#set_property PACKAGE_PIN U17 [get_ports {spi_1_io0_io}]
+#set_property IOSTANDARD LVCMOS33 [get_ports {spi_1_io0_io}]
 
-##IO_L20P_T3_34
-#set_property PACKAGE_PIN T17 [get_ports {je[6]}]
-#set_property IOSTANDARD LVCMOS33 [get_ports {je[6]}]
 
-##IO_L7N_T1_34
-#set_property PACKAGE_PIN Y17 [get_ports {je[7]}]
-#set_property IOSTANDARD LVCMOS33 [get_ports {je[7]}]
+##IO_L20P_T3_34 JE9
+# CSN SS
+#set_property PACKAGE_PIN T17 [get_ports {spi_1_ss_io}]
+#set_property IOSTANDARD LVCMOS33 [get_ports {spi_1_ss_io}]
+# CSN SS1
+#set_property PACKAGE_PIN T17 [get_ports {spi_1_ss1_o}]
+#set_property IOSTANDARD LVCMOS33 [get_ports {spi_1_ss1_o}]
+
+##IO_L7N_T1_34 JE10
+# VCC
+#set_property PACKAGE_PIN Y17 [get_ports {gpio_tri_o[3]}]
+#set_property IOSTANDARD LVCMOS33 [get_ports {gpio_tri_o[3]}]
 
 
 ##USB-OTG overcurrent detect pin
@@ -342,6 +396,8 @@ set_property IOSTANDARD LVCMOS33 [get_ports {spi_1_ss_io}]
 ##IO_L7P_T1_AD2P_35
 #set_property PACKAGE_PIN M19 [get_ports {vga_r[0]}]
 #set_property IOSTANDARD LVCMOS33 [get_ports {vga_r[0]}]
+set_property PACKAGE_PIN M19 [get_ports {spi_1_ss_io}]
+set_property IOSTANDARD LVCMOS33 [get_ports {spi_1_ss_io}]
 
 ##IO_L9N_T1_DQS_AD3N_35
 #set_property PACKAGE_PIN L20 [get_ports {vga_r[1]}]
@@ -410,5 +466,3 @@ set_property IOSTANDARD LVCMOS33 [get_ports {spi_1_ss_io}]
 ##IO_0_34
 #set_property PACKAGE_PIN R19 [get_ports vga_vs]
 #set_property IOSTANDARD LVCMOS33 [get_ports vga_vs]
-
-
