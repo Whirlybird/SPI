@@ -38,6 +38,27 @@ static XSpiPs xSPI;
 		XSpiPs_PolledTransfer(&xSPI,(u8 *) (writeBuf),(u8 *) (readBuf), len);\
 	}
 
+// pipe addresses
+u8 addresses[][6] = {"1Node","2Node"};
+uint8_t pipe0_reading_address[5];
+u8 payload_size = 32;
+u8 radioNum = 0;
+
+static const uint8_t child_pipe[] =
+{
+  RX_ADDR_P0, RX_ADDR_P1, RX_ADDR_P2, RX_ADDR_P3, RX_ADDR_P4, RX_ADDR_P5
+};
+
+static const uint8_t child_payload_size[]  =
+{
+  RX_PW_P0, RX_PW_P1, RX_PW_P2, RX_PW_P3, RX_PW_P4, RX_PW_P5
+};
+
+static const uint8_t child_pipe_enable[] =
+{
+  ERX_P0, ERX_P1, ERX_P2, ERX_P3, ERX_P4, ERX_P5
+};
+
 void initGPIO(void)
 {
 	XGpio_Config *pxConfigPtr;
@@ -107,6 +128,7 @@ void setChannel(uint8_t channel)
 {
 	const uint8_t max_channel = 125;
 	writeReg(RF_CH, min(channel, max_channel));
+	getRegByte(RF_CH);
 }
 
 void flush_rx()
@@ -178,15 +200,18 @@ void startListening()
 	writeReg(NRF_CONFIG, getRegByte(NRF_CONFIG) | _BV(PRIM_RX));
 	writeReg(NRF_STATUS, _BV(RX_DR) | _BV(TX_DS) | _BV(MAX_RT));
 	SET_CE();
-	usleep(200);
+	usleep(200); // time for rx to settle
 	// Restore the pipe0 address, if exists
-	/*
-	if (pipe0_reading_address[0] > 0){
-	write_register(RX_ADDR_P0, pipe0_reading_address, addr_width);
-	}else{
-	closeReadingPipe(0);
+
+	if (pipe0_reading_address[0] > 0)
+	{
+		writeRegBuf(RX_ADDR_P0, pipe0_reading_address, ADDR_WIDTH);
 	}
-	*/
+	else
+	{
+		closeReadingPipe(0);
+	}
+
 
 	// Flush buffers
 	if(getRegByte(FEATURE) & _BV(EN_ACK_PAY)){
@@ -215,6 +240,7 @@ void stopListening()
 
 u8 initRF24()
 {
+	pipe0_reading_address[0] = 0;
 /*
 	// Debug code for verifying that SPI works
 	// TODO?: add assert for default config in SPI init
@@ -265,10 +291,71 @@ u8 initRF24()
     powerUp();
     DELAY_MS(2);
 
+    // open up relevant pipes
+    if (radioNum)
+    {
+        openWritingPipe(addresses[1]);
+        openReadingPipe(1, addresses[0]);
+    }
+    else
+    {
+        openWritingPipe(addresses[0]);
+        openReadingPipe(1, addresses[1]);
+    }
+
     // Immediately start listening (or go into RX mode)
     startListening();
 
     return getRegByte(NRF_CONFIG);
+}
+
+void closeReadingPipe( uint8_t pipe )
+{
+	writeReg(EN_RXADDR, getRegByte(EN_RXADDR) & ~_BV(pgm_read_byte(&child_pipe_enable[pipe])));
+}
+
+void openReadingPipe(uint8_t child, uint8_t *address)
+{
+  // If this is pipe 0, cache the address.  This is needed because
+  // openWritingPipe() will overwrite the pipe 0 address, so
+  // startListening() will have to restore it.
+  if (child == 1){
+    memcpy(pipe0_reading_address, address, ADDR_WIDTH);
+  }
+
+  if (child <= 6)
+  {
+    // For pipes 2-5, only write the LSB
+    if (child < 2)
+    {
+      writeRegBuf(pgm_read_byte(&child_pipe[child]), address, ADDR_WIDTH);
+    }
+    else
+    {
+      writeRegBuf(pgm_read_byte(&child_pipe[child]), address, 1);
+	}
+    writeReg(pgm_read_byte(&child_payload_size[child]), payload_size);
+
+    // Note it would be more efficient to set all of the bits for all open
+    // pipes at once.  However, I thought it would make the calling code
+    // more simple to do it this way.
+    writeReg(EN_RXADDR, getRegByte(EN_RXADDR) | _BV(pgm_read_byte(&child_pipe_enable[child])));
+  }
+}
+
+
+void openWritingPipe(uint8_t *address)
+{
+	// Note that AVR 8-bit uC's store this LSB first, and the NRF24L01(+)
+	// expects it LSB first too, so we're good.
+	u8 buffer[32];
+	writeRegBuf(RX_ADDR_P0, address, ADDR_WIDTH);
+	readRegBuf(RX_ADDR_P0, buffer, ADDR_WIDTH);
+	writeRegBuf(TX_ADDR, address, ADDR_WIDTH);
+	readRegBuf(TX_ADDR, buffer, ADDR_WIDTH);
+
+	// Write payload_size of 32 (default)
+	writeReg(RX_PW_P0, payload_size);
 }
 
 // Assumes len includes the extra byte for the status register that automatically
@@ -319,6 +406,7 @@ void vParTestInitialise( void )
 	initSPI();
 	val = initRF24();
 	(void)val;
+
 }
 
 void readReg(u8 addr, u8 *readBuf)
@@ -330,6 +418,16 @@ void readReg(u8 addr, u8 *readBuf)
 	SPI_TRANSFER(writeBuf, readBuf, 2);
 }
 
+
+void readRegBuf(u8 reg, u8 *buf, u8 len)
+{
+	u8 readBuf[32];
+
+	readBuf[0] = reg & REGISTER_MASK;
+	SPI_TRANSFER(readBuf, buf, len + 1);
+}
+
+
 u8 getRegByte(u8 addr)
 {
 	u8 writeBuf[2], readBuf[2];
@@ -340,15 +438,31 @@ u8 getRegByte(u8 addr)
 	return readBuf[1];
 }
 
+#define WRITE_MASK(reg) (((reg) & REGISTER_MASK) | 0x20)
+
 u8 writeReg(u8 reg, u8 val)
 {
 	u8 readBuf[2];
 	u8 writeBuf[2];
 
-	writeBuf[0] = (reg & REGISTER_MASK) | 0x20;
+	writeBuf[0] = WRITE_MASK(reg);
 	writeBuf[1] = val;
 
 	SPI_TRANSFER(writeBuf, readBuf, 2);
 
 	return readBuf[1];
+}
+
+void writeRegBuf(u8 reg, u8 *buf, u8 len)
+{
+	u8 writeBuf[32];
+	u8 i;
+	writeBuf[0] = WRITE_MASK(reg);
+
+	for (i = 1; i < len + 1; i++)
+	{
+		writeBuf[i] = buf[i - 1];
+	}
+
+	SPI_TRANSFER(writeBuf, NULL, len + 1);
 }
