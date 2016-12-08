@@ -75,7 +75,7 @@ void main_blinky( void )
 	{
 		readBuf[i] = 0x00;
 	}
-
+	startListening();
 	for( ;; )
 	{
 		/*
@@ -89,16 +89,19 @@ void main_blinky( void )
 			;
 		}
 		i = 0;
+		stopListening();
 		while(dataAvailable())
 		{
-
-			stopListening();
-			readRx(readBuf[i++], sizeof(unsigned char));
+			readRx(&readBuf[i++], sizeof(unsigned long));
 			//while(1);
 			//readBuf[0] = getRegByte(RPD);
 			(void)readBuf;
 		}
 		startListening();
+		while(1)
+		{
+			(void)readBuf;
+		}
 	}
 }
 /*-----------------------------------------------------------*/
